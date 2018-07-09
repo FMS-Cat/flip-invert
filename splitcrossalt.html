@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+
+<meta charset="UTF-8">
+<title></title>
+
+<body>
+  <div id="container">
+    <div class="receptor" id="left"></div>
+    <div class="receptor" id="down"></div>
+    <div class="receptor" id="up"></div>
+    <div class="receptor" id="right"></div>
+  </div>
+  <div id="text">
+    Split: <span id="spanSplit">0.0</span>
+    Cross: <span id="spanCross">0.0</span>
+    Alternate: <span id="spanAlternate">0.0</span>
+    Reverse: <span id="spanReverse">0.0</span>
+  </div>
+</body>
+
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  #container {
+    position: relative;
+    width: 640px;
+    height: 480px;
+    background: #000;
+  }
+
+  .receptor {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    background-image: url( receptor.png );
+  }
+  .receptor:hover { background-color: rgba( 0, 255, 102, 0.2 ); }
+  .receptor:active { background-color: rgba( 255, 0, 102, 0.5 ); }
+  .receptor#left { transform: rotate( 90deg ); }
+  .receptor#up { transform: rotate( 180deg ); }
+  .receptor#right { transform: rotate( -90deg ); }
+</style>
+
+<script>
+  let dirs = [ "left", "down", "up", "right" ];
+  let receptors = dirs.map( dir => document.getElementById( dir ) );
+  let xs = [ 192, 256, 320, 384 ];
+  let ys = [ 83, 83, 83, 83 ];
+
+  let dragging = -1;
+  let grabX = 0;
+  let grabY = 0;
+
+  let nf = new Intl.NumberFormat( { style: "percent" } ).format;
+
+  let flipInvert = ( flip, invert ) => {
+    xs[ 0 ] = 192 + 192 * flip + 64 * invert;
+    xs[ 1 ] = 256 +  64 * flip - 64 * invert;
+    xs[ 2 ] = 320 -  64 * flip + 64 * invert;
+    xs[ 3 ] = 384 - 192 * flip - 64 * invert;
+    spanFlip.innerText = nf( flip * 100 ) + "%";
+    spanInvert.innerText = nf( invert * 100 ) + "%";
+  };
+  
+  let SplitCrossAlt = ( split, cross, alternate, reverse ) => {
+	<!-- ys[ 0 ] = 83 + 256 * reverse; -->
+	<!-- ys[ 1 ] = 83 + 256 * reverse + 256 * alternate + 256 * cross; -->
+	<!-- ys[ 2 ] = 83 + 256 * reverse + 256 * cross + 256 * split; -->
+	<!-- ys[ 3 ] = 83 + 256 * reverse + 256 * alternate + 256 * split; -->
+	spanSplit.innerText = nf( split * 100 ) + "%";
+    spanCross.innerText = nf( cross * 100 ) + "%";
+    spanAlternate.innerText = nf( alternate * 100 ) + "%";
+    spanReverse.innerText = nf( reverse * 100 ) + "%";
+  };
+
+  receptors.map( ( receptor, index ) => {
+    receptor.addEventListener( "mousedown", event => {
+      dragging = index;
+
+      let rect = receptor.getBoundingClientRect();
+      grabX = event.clientX - rect.left;
+      grabY = event.clientY - rect.top;
+    } );
+  } );
+
+  document.addEventListener( "mousemove", event => {
+    if ( dragging !== -1 ) {
+      console.log( dragging );
+      console.log( event.clientY - grabY );
+
+      ys[ dragging ] = event.clientY - grabY;
+	  SplitCrossAlt(
+		( -(ys[0]-83) - (ys[1]-83) + (ys[2]-83) + (ys[3]-83) ) / 512,
+		( -(ys[0]-83) + (ys[1]-83) + (ys[2]-83) - (ys[3]-83) ) / 512,
+		( -(ys[0]-83) + (ys[1]-83) - (ys[2]-83) + (ys[3]-83) ) / 512,
+		( ys[0] - 83 ) / 256
+		);
+	  
+	  /*
+      if ( dragging === 0 || dragging === 1 ) {
+        flipInvert(
+          ( xs[ 0 ] + xs[ 1 ] - 448 ) / 256,
+          ( xs[ 0 ] - 3 * xs[ 1 ] + 576 ) / 256
+        );
+      } else {
+        flipInvert(
+          ( -xs[ 2 ] - xs[ 3 ] + 704 ) / 256,
+          ( 3 * xs[ 2 ] - xs[ 3 ] - 576 ) / 256
+        );
+      }
+	  */
+	  
+    }
+  } );
+
+  document.addEventListener( "mouseup", event => {
+    dragging = -1;
+  } );
+
+  let update = () => {
+    receptors[ 0 ].style.left = xs[ 0 ] + "px";
+    receptors[ 1 ].style.left = xs[ 1 ] + "px";
+    receptors[ 2 ].style.left = xs[ 2 ] + "px";
+    receptors[ 3 ].style.left = xs[ 3 ] + "px";
+
+    receptors[ 0 ].style.top = ys[ 0 ] + "px";
+    receptors[ 1 ].style.top = ys[ 1 ] + "px";
+    receptors[ 2 ].style.top = ys[ 2 ] + "px";
+    receptors[ 3 ].style.top = ys[ 3 ] + "px";
+
+    requestAnimationFrame( update );
+  };
+  update();
+</script>

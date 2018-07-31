@@ -69,7 +69,9 @@
   let grabX = 0;
   let grabY = 0;
 
-  let snapInterval = 16;
+  const snapInterval = 16;
+
+  let ignoreSnapping = false;
   let holdX = false;
   let holdY = false;
 
@@ -96,7 +98,7 @@
   };
 
   const snap = ( value ) => {
-    if ( 0 === snapInterval ) {
+    if ( ignoreSnapping ) {
       return value;
     } else {
       return Math.round( value / snapInterval ) * snapInterval;
@@ -162,7 +164,7 @@
     }
 
     if ( event.altKey ) {
-      snapInterval = 0;
+      ignoreSnapping = true;
       spanSnapping.innerText = "ON";
     }
   } );
@@ -181,7 +183,7 @@
     }
 
     if ( !event.altKey ) {
-      snapInterval = 32;
+      ignoreSnapping = false;
       spanSnapping.innerText = "OFF";
     }
   } );

@@ -12,10 +12,16 @@
   </div>
 
   <div id="text">
-    Flip: <span id="spanFlip">0.0</span><br />
-    Invert: <span id="spanInvert">0.0</span><br />
+    Flip: <span id="spanFlip">0%</span><br />
+    Invert: <span id="spanInvert">0%</span><br />
+    Split: <span id="spanSplit">0%</span><br />
+    Cross: <span id="spanCross">0%</span><br />
+    Alternate: <span id="spanAlternate">0%</span><br />
+    Reverse: <span id="spanReverse">0%</span><br />
     <br />
-    Snapping (Press <code>Alt</code> !): <span id="spanSnapping">ON</span>
+    Hold X (Press <code>Ctrl</code> !): <span id="spanHoldX">OFF</span><br />
+    Hold Y (Press <code>Shift</code> !): <span id="spanHoldY">OFF</span><br />
+    Ignore snapping (Press <code>Alt</code> !): <span id="spanSnapping">OFF</span>
   </div>
 </body>
 
@@ -57,16 +63,19 @@
   const receptors = dirs.map( dir => document.getElementById( dir ) );
 
   let xs = [ 192, 256, 320, 384 ];
+  let ys = [  83,  83,  83,  83 ];
 
   let dragging = -1;
   let grabX = 0;
   let grabY = 0;
-  
-  let snappingX = 16;
 
-  let nf = new Intl.NumberFormat( { style: "percent" } ).format;
+  let snapInterval = 16;
+  let holdX = false;
+  let holdY = false;
 
-  let flipInvert = ( flip, invert ) => {
+  const nf = new Intl.NumberFormat( { style: "percent" } ).format;
+
+  const flipInvert = ( flip, invert ) => {
     xs[ 0 ] = 192 + 192 * flip + 64 * invert;
     xs[ 1 ] = 256 +  64 * flip - 64 * invert;
     xs[ 2 ] = 320 -  64 * flip + 64 * invert;
@@ -74,6 +83,25 @@
     spanFlip.innerText = nf( flip * 100 ) + "%";
     spanInvert.innerText = nf( invert * 100 ) + "%";
   };
+
+  const splitCrossAlt = ( split, cross, alternate, reverse ) => {
+    ys[ 0 ] = 83 + 256 * reverse;
+    ys[ 1 ] = 83 + 256 * reverse + 256 * alternate + 256 * cross;
+    ys[ 2 ] = 83 + 256 * reverse + 256 * cross + 256 * split;
+    ys[ 3 ] = 83 + 256 * reverse + 256 * alternate + 256 * split;
+    spanSplit.innerText = nf( split * 100 ) + "%";
+    spanCross.innerText = nf( cross * 100 ) + "%";
+    spanAlternate.innerText = nf( alternate * 100 ) + "%";
+    spanReverse.innerText = nf( reverse * 100 ) + "%";
+  };
+
+  const snap = ( value ) => {
+    if ( 0 === snapInterval ) {
+      return value;
+    } else {
+      return Math.round( value / snapInterval ) * snapInterval;
+    }
+  }
 
   receptors.map( ( receptor, index ) => {
     receptor.addEventListener( "mousedown", ( event ) => {
@@ -87,12 +115,12 @@
 
   document.addEventListener( "mousemove", ( event ) => {
     if ( dragging !== -1 ) {
-      const x = event.clientX - grabX;
+      if ( !holdX ) {
+        xs[ dragging ] = snap( event.clientX - grabX );
+      }
 
-      if ( snappingX > 0 ) {
-        xs[ dragging ] = Math.round( x / snappingX ) * snappingX;
-      } else {
-        xs[ dragging ] = x;
+      if ( !holdY ) {
+        ys[ dragging ] = snap( event.clientY - grabY - 83 ) + 83;
       }
 
       if ( dragging === 0 || dragging === 1 ) {
@@ -106,6 +134,13 @@
           ( 3 * xs[ 2 ] - xs[ 3 ] - 576 ) / 256
         );
       }
+
+      splitCrossAlt(
+        ( -( ys[ 0 ] - 83 ) - ( ys[ 1 ] - 83 ) + ( ys[ 2 ] - 83 ) + ( ys[ 3 ] - 83 ) ) / 512,
+        ( -( ys[ 0 ] - 83 ) + ( ys[ 1 ] - 83 ) + ( ys[ 2 ] - 83 ) - ( ys[ 3 ] - 83 ) ) / 512,
+        ( -( ys[ 0 ] - 83 ) + ( ys[ 1 ] - 83 ) - ( ys[ 2 ] - 83 ) + ( ys[ 3 ] - 83 ) ) / 512,
+        ( ys[ 0 ] - 83 ) / 256
+      );
     }
   } );
 
@@ -115,30 +150,52 @@
   
   document.addEventListener( "keydown", ( event ) => {
     event.preventDefault();
+
+    if ( event.shiftKey ) {
+      holdY = true;
+      spanHoldY.innerText = "ON";
+    }
+
+    if ( event.ctrlKey || event.metaKey ) {
+      holdX = true;
+      spanHoldX.innerText = "ON";
+    }
+
     if ( event.altKey ) {
-      snappingX = 0;
-      spanSnapping.innerText = "OFF";
+      snapInterval = 0;
+      spanSnapping.innerText = "ON";
     }
   } );
   
   document.addEventListener( "keyup", ( event ) => {
     event.preventDefault();
+
+    if ( !event.shiftKey ) {
+      holdY = false;
+      spanHoldY.innerText = "OFF";
+    }
+
+    if ( !( event.ctrlKey || event.metaKey ) ) {
+      holdX = false;
+      spanHoldX.innerText = "OFF";
+    }
+
     if ( !event.altKey ) {
-      snappingX = 32;
-      spanSnapping.innerText = "ON";
+      snapInterval = 32;
+      spanSnapping.innerText = "OFF";
     }
   } );
 
-  let update = () => {
+  const update = () => {
     receptors[ 0 ].style.left = xs[ 0 ] + "px";
     receptors[ 1 ].style.left = xs[ 1 ] + "px";
     receptors[ 2 ].style.left = xs[ 2 ] + "px";
     receptors[ 3 ].style.left = xs[ 3 ] + "px";
 
-    receptors[ 0 ].style.top = 83 + "px";
-    receptors[ 1 ].style.top = 83 + "px";
-    receptors[ 2 ].style.top = 83 + "px";
-    receptors[ 3 ].style.top = 83 + "px";
+    receptors[ 0 ].style.top = ys[ 0 ] + "px";
+    receptors[ 1 ].style.top = ys[ 1 ] + "px";
+    receptors[ 2 ].style.top = ys[ 2 ] + "px";
+    receptors[ 3 ].style.top = ys[ 3 ] + "px";
 
     requestAnimationFrame( update );
   };

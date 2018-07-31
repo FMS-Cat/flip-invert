@@ -10,11 +10,12 @@
     <div class="receptor" id="up"></div>
     <div class="receptor" id="right"></div>
   </div>
+
   <div id="text">
-	Flip: <span id="spanFlip">0.0</span>
-	Invert: <span id="spanInvert">0.0</span>
-	<p>
-	Snapping: <span id="spanSnapping">ON</span>
+    Flip: <span id="spanFlip">0.0</span><br />
+    Invert: <span id="spanInvert">0.0</span><br />
+    <br />
+    Snapping (Press <code>Alt</code> !): <span id="spanSnapping">ON</span>
   </div>
 </body>
 
@@ -22,6 +23,13 @@
   body {
     margin: 0;
     padding: 0;
+  }
+
+  code {
+    font-family: Consolas, Monaco, monospace;
+    background: rgba( 0, 0, 0, 0.2 );
+    border-radius: 0.2em;
+    padding: 0 0.2em;
   }
 
   #container {
@@ -45,15 +53,16 @@
 </style>
 
 <script>
-  let dirs = [ "left", "down", "up", "right" ];
-  let receptors = dirs.map( dir => document.getElementById( dir ) );
+  const dirs = [ "left", "down", "up", "right" ];
+  const receptors = dirs.map( dir => document.getElementById( dir ) );
+
   let xs = [ 192, 256, 320, 384 ];
 
   let dragging = -1;
   let grabX = 0;
   let grabY = 0;
   
-  let snappingX = 32;
+  let snappingX = 16;
 
   let nf = new Intl.NumberFormat( { style: "percent" } ).format;
 
@@ -67,27 +76,26 @@
   };
 
   receptors.map( ( receptor, index ) => {
-    receptor.addEventListener( "mousedown", event => {
+    receptor.addEventListener( "mousedown", ( event ) => {
       dragging = index;
 
-      let rect = receptor.getBoundingClientRect();
+      const rect = receptor.getBoundingClientRect();
       grabX = event.clientX - rect.left;
       grabY = event.clientY - rect.top;
     } );
   } );
 
-  document.addEventListener( "mousemove", event => {
+  document.addEventListener( "mousemove", ( event ) => {
     if ( dragging !== -1 ) {
-      console.log( dragging );
-      console.log( event.clientX - grabX );
-	  
+      const x = event.clientX - grabX;
+
       if ( snappingX > 0 ) {
-        xs[ dragging ] = Math.floor((event.clientX - grabX)/snappingX)*snappingX;
-	  } else {
-        xs[ dragging ] = event.clientX - grabX;
-	  }
-      
-	  if ( dragging === 0 || dragging === 1 ) {
+        xs[ dragging ] = Math.round( x / snappingX ) * snappingX;
+      } else {
+        xs[ dragging ] = x;
+      }
+
+      if ( dragging === 0 || dragging === 1 ) {
         flipInvert(
           ( xs[ 0 ] + xs[ 1 ] - 448 ) / 256,
           ( xs[ 0 ] - 3 * xs[ 1 ] + 576 ) / 256
@@ -98,28 +106,27 @@
           ( 3 * xs[ 2 ] - xs[ 3 ] - 576 ) / 256
         );
       }
-	  
     }
   } );
 
-  document.addEventListener( "mouseup", event => {
+  document.addEventListener( "mouseup", ( event ) => {
     dragging = -1;
   } );
   
-  document.addEventListener( "keydown", (event) => {
-	event.preventDefault();
-	if( event.altKey ){
-	  snappingX = 0;
-	  spanSnapping.innerText = "OFF";
-	}
+  document.addEventListener( "keydown", ( event ) => {
+    event.preventDefault();
+    if ( event.altKey ) {
+      snappingX = 0;
+      spanSnapping.innerText = "OFF";
+    }
   } );
   
-  document.addEventListener( "keyup", (event) => {
-	event.preventDefault();
-	if( !event.altKey ){
-	  snappingX = 32;
-	  spanSnapping.innerText = "ON";
-	}
+  document.addEventListener( "keyup", ( event ) => {
+    event.preventDefault();
+    if ( !event.altKey ) {
+      snappingX = 32;
+      spanSnapping.innerText = "ON";
+    }
   } );
 
   let update = () => {

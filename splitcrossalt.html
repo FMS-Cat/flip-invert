@@ -16,6 +16,8 @@
     Cross: <span id="spanCross">0.0</span>
     Alternate: <span id="spanAlternate">0.0</span>
     Reverse: <span id="spanReverse">0.0</span>
+	<p>
+	Snapping: <span id="spanSnapping">ON</span>
   </div>
 </body>
 
@@ -54,6 +56,8 @@
   let dragging = -1;
   let grabX = 0;
   let grabY = 0;
+  
+  let snappingY = 32;
 
   let nf = new Intl.NumberFormat( { style: "percent" } ).format;
 
@@ -92,7 +96,14 @@
       console.log( dragging );
       console.log( event.clientY - grabY );
 
-      ys[ dragging ] = event.clientY - grabY;
+      //ys[ dragging ] = event.clientY - grabY;
+	  
+      if ( snappingY > 0 ) {
+        ys[ dragging ] = Math.min(Math.floor((event.clientY - grabY)/snappingY)*snappingY + 19, 256+83);
+	  } else {
+        ys[ dragging ] = Math.min(event.clientY - grabY, 256+83);
+	  }
+	  
 	  SplitCrossAlt(
 		( -(ys[0]-83) - (ys[1]-83) + (ys[2]-83) + (ys[3]-83) ) / 512,
 		( -(ys[0]-83) + (ys[1]-83) + (ys[2]-83) - (ys[3]-83) ) / 512,
@@ -119,6 +130,22 @@
 
   document.addEventListener( "mouseup", event => {
     dragging = -1;
+  } );
+  
+  document.addEventListener( "keydown", (event) => {
+	event.preventDefault();
+	if( event.altKey ){
+	  snappingY = 0;
+	  spanSnapping.innerText = "OFF";
+	}
+  } );
+  
+  document.addEventListener( "keyup", (event) => {
+	event.preventDefault();
+	if( !event.altKey ){
+	  snappingY = 32;
+	  spanSnapping.innerText = "ON";
+	}
   } );
 
   let update = () => {
